@@ -16,7 +16,7 @@
 #
 # Usage
 # 	$ dontforget let dog back inside 10
-# 	=> I'll remind you: "let the dog back in" in 10 minutes
+# 	=> I'll remind you: "let the dog back inside" in 10 minutes
 #
 # It can parse a little extra verbosity around the text, too
 # 	$ dontforget to let my dog back in 10m
