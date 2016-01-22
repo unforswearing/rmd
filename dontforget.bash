@@ -15,7 +15,7 @@
 # Save the script as `dontforget` in your path and make it executable
 #
 # Usage
-# 	$ dontforget let dog back inside 10
+# 	$ dontforget let the dog back inside 10
 # 	=> I'll remind you: "let the dog back inside" in 10 minutes
 #
 # It can parse a little extra verbosity around the text, too
