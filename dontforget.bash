@@ -12,6 +12,8 @@
 # be interpreted as hours, minutes, or seconds. The default assumption
 # is minutes.
 #
+# Save the script as `dontforget` in your path and make it executable
+#
 # Usage
 # 	$ dontforget let dog back inside 10
 # 	=> I'll remind you: "let the dog back in" in 10 minutes
