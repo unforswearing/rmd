@@ -19,8 +19,8 @@
 # 	=> I'll remind you: "let the dog back inside" in 10 minutes
 #
 # It can parse a little extra verbosity around the text, too
-# 	$ dontforget to let my dog back in 10m
-# 	=> I'll remind you: "let your dog back in" in 10 minutes
+# 	$ dontforget to let my dog back inside in 10m
+# 	=> I'll remind you: "let your dog back inside" in 10 minutes
 #
 # 	$ dontforget I really need to take a break in 1h
 # 	I'll remind you: "you really need to take a break" in 60 minutes
@@ -56,11 +56,17 @@ __df() {
 		return $?
 	fi
 
-	local instring="$*"
 	local timespan reminder
 	for arg in $@; do
-		if [[ $arg =~ ^[0-9]+[hms]?$ && -z $timespan ]]; then
+		# e.g. 3:30pm, 10am -- parse as date
+		if [[ $arg =~ ^[0-9][0-9]?(:[0-9][0-9])?(a|p)m?$ && -z $timespan ]]; then
+			# ensure meridian (2a = 2am)
+			arg=$(echo "$arg"|sed -E 's/m?$/m/')
+			timespan=$(__df_parse_date $arg)
+		# e.g. 1h or 30m -- parse as interval
+		elif [[ $arg =~ ^[0-9]+[hms]?$ && -z $timespan ]]; then
 			timespan=$(echo "$arg"|sed -E 's/^([0-9]+)([HhSsMm])?$/\1 \2/')
+		# Assume part of reminder string
 		else
 			reminder+=" $arg"
 		fi
@@ -76,12 +82,19 @@ __df() {
 	fi
 	reminder=$(__df_clean_reminder "$reminder")
 
-	echo "I'll remind you: \"$reminder\" in $(($length/60)) minutes"
+	# echo "I'll remind you: \"$reminder\" in $(($length/60)) minutes"
+	echo "I'll remind you: \"$reminder\" in $(__df_show_time $length)"
 	if [[ $DF_NO_BACKGROUND == true ]]; then
 		sleep $length && __df_remind "$reminder"
 	else
 		sleep $length && __df_remind "$reminder" &
 	fi
+}
+
+__df_parse_date() {
+	TIMESTAMP=$(ruby -rtime -e "puts Time.parse('$1').strftime('%s')")
+	NOW=$(date '+%s')
+	echo "$(($TIMESTAMP-$NOW)) s"
 }
 
 __df_list_reminders() {
@@ -92,6 +105,8 @@ __df_remind() {
 	local reminder="$*"
 	if [[ -n $(ps ax | grep LaunchBar.app) && $DF_LAUNCHBAR == true ]]; then
 		osascript -e "tell application \"LaunchBar\" to display in large type \"Time to $reminder\" with sound \"Glass\""
+	else
+		osascript -e "display dialog \"Time to $reminder\""
 	fi
 	/usr/bin/afplay /System/Library/Sounds/Glass.aiff
 	say "$reminder"
@@ -116,13 +131,67 @@ __df_clean_reminder() {
 
 __df_strip_naturals() {
 	local original=$(echo "$*"|sed -E 's/^( *remind me *)//')
-	while [[ "$original" =~ ^[[:space:]]*(to|in|about) ]]; do
-		original=$(echo "$original"| sed -E 's/^ *(to|in|about) *//g')
+	while [[ "$original" =~ ^[[:space:]]*(to|in|about|at) ]]; do
+		original=$(echo "$original"| sed -E 's/^ *(to|in|about|at) *//g')
 	done
 
-	if [[ "$original" =~ in[[:space:]]*$ ]]; then original=$(echo "$original"| sed -E 's/ *in *$//'); fi
+	[[ "$original" =~ in[[:space:]]*$ ]] && original=$(echo "$original"| sed -E 's/ *in *$//')
+	# [[ "$original" =~ at[[:space:]]*$ ]] && original=$(echo "$original"| sed -E 's/ *at *$//')
 
 	echo $original  | sed -E 's/(^ *| *$)//g'
+}
+
+__df_show_time () {
+	local num=$1
+	local sec=0
+	local min=0
+	local hour=0
+	local day=0
+	local output=""
+	if ((num>59)); then
+		((sec=num%60))
+		if ((sec>0)); then
+			output="${sec} $(__df_pluralize $sec second) $output"
+		fi
+		((num=num/60))
+
+		if((num>59)); then
+			((min=num%60))
+			if ((min>0)); then
+				output="${min} $(__df_pluralize $min minute) $output"
+			fi
+			((num=num/60))
+			if((num>23)); then
+				((hour=num%24))
+				if ((hour>0)); then
+					output="${hour} $(__df_pluralize $hour hour) $output"
+				fi
+
+				((day=num/24))
+				if ((day>0)); then
+					output="${day} $(__df_pluralize $day day) $output"
+				fi
+			else
+				((hour=num))
+				output="${hour} $(__df_pluralize $hour hour) $output"
+			fi
+		else
+			((min=num))
+			output="${min} $(__df_pluralize $min minute) $output"
+		fi
+	else
+		((sec=num))
+		output="${sec} $(__df_pluralize $sec sec) $output"
+	fi
+	echo $output
+}
+
+__df_pluralize() {
+	if (($1>1)); then
+		echo "${2}s"
+	else
+		echo $2
+	fi
 }
 
 __df_cancel() {
