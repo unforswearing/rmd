@@ -6,7 +6,7 @@ To use, download the repo and add it somewhere in your path. Usage instructions 
 
 ```
 $ rmd turn off the stove in 20m
-=> I'll remind you: "let your dog back inside" in 10 minutes
+=> I'll remind you: "turn off the stove" in 20 minutes
 
 $ rmd leave for dinner in 2h
 => I'll remind you: "leave for dinner" in 2 hours
