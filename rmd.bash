@@ -109,7 +109,7 @@ __df_parse_date() {
 
 __df_list_reminders() {
   IFS=$'\n'
-  for line in $(pgrep -filq "bash .*rmd.bash"); do
+  for line in $(pgrep -fil "bash .*rmd.bash"); do
     __df_clean_reminder "$(sed -E 's/is a l//' <($line))"
   done
 }
